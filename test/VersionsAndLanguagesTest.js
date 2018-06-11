@@ -33,7 +33,8 @@ var testDocuments = {
     ru: require('./testdata/ru'),
     sv: require('./testdata/sv'),
     tr: require('./testdata/tr'),
-    th: require('./testdata/th')
+    th: require('./testdata/th'),
+    zhcn: require('./testdata/zhcn')
 };
 
 lunrVersions.forEach(function(lunrVersion) {
