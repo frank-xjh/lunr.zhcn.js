@@ -21,7 +21,7 @@ module.exports = {
     tests: [
         {
             what: "find the word %w",
-            search: "关系",
+            search: "变化",
             found: 1
         }, {
             what: "find the word %w",

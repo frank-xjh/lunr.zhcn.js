@@ -99,7 +99,7 @@ lunrVersions.forEach(function(lunrVersion) {
 
                 var lunr = require('./lunr/' + lunrVersion.lunr);
                 require('../lunr.stemmer.support.js')(lunr);
-                if (language === 'ja' || language === 'jp') {    // for japanese, we must also load the tinyseg tokenizer
+                if (language === 'ja' || language === 'jp' || language === 'zhcn') {    // for japanese, we must also load the tinyseg tokenizer
                     require('../tinyseg')(lunr);
                 }
                 if (language === 'th') {    // for thai, we must also load the wordcut tokenizer

@@ -44,7 +44,9 @@
     lunr.zhcn = function() {
         this.pipeline.reset();
         this.pipeline.add(
-            lunr.zhcn.trimmer
+            lunr.zhcn.trimmer,
+            lunr.zhcn.stopWordFilter,
+            lunr.zhcn.stemmer
         );
 
         if (isLunr2) { // for lunr version 2.0.0
@@ -59,48 +61,95 @@
         }
     };
 
-    /* lunr trimmer function */
-    lunr.zhcn.isChineseChar = function(str){
-        var reg = /[\u4E00-\u9FA5\uF900-\uFA2D]/;  
-        return reg.test(str); 
-    }
-    lunr.zhcn.trimmer = function(token){
-        if(lunr.zhcn.isChineseChar(token)){
-            return token;
+
+    var segmenter = new lunr.TinySegmenter(); 
+
+    lunr.zhcn.tokenizer = function(obj) {
+      var i;
+      var str;
+      var len;
+      var segs;
+      var tokens;
+      var char;
+      var sliceLength;
+      var sliceStart;
+      var sliceEnd;
+      var segStart;
+
+      if (!arguments.length || obj == null || obj == undefined)
+        return [];
+
+      if (Array.isArray(obj)) {
+        return obj.map(
+          function(t) {
+            return isLunr2 ? new lunr.Token(t.toLowerCase()) : t.toLowerCase();
+          }
+        );
+      }
+
+      str = obj.toString().toLowerCase().replace(/^\s+/, '');
+      for (i = str.length - 1; i >= 0; i--) {
+        if (/\S/.test(str.charAt(i))) {
+          str = str.substring(0, i + 1);
+          break;
         }
-        return token.replace(/^\W+/, '').replace(/^\W+$/, '');
+      }
+
+      tokens = [];
+      len = str.length;
+      for (sliceEnd = 0, sliceStart = 0; sliceEnd <= len; sliceEnd++) {
+        char = str.charAt(sliceEnd);
+        sliceLength = sliceEnd - sliceStart;
+
+        if ((char.match(/\s/) || sliceEnd == len)) {
+          if (sliceLength > 0) {
+            segs = segmenter.segment(str.slice(sliceStart, sliceEnd)).filter(
+              function(token) {
+                return !!token;
+              }
+            );
+
+            segStart = sliceStart;
+            for (i = 0; i < segs.length; i++) {
+              if (isLunr2) {
+                tokens.push(
+                  new lunr.Token(
+                    segs[i], {
+                      position: [segStart, segs[i].length],
+                      index: tokens.length
+                    }
+                  )
+                );
+              } else {
+                tokens.push(segs[i]);
+              }
+              segStart += segs[i].length;
+            }
+          }
+
+          sliceStart = sliceEnd + 1;
+        }
+      }
+
+      return tokens;
     }
+
+    lunr.zhcn.stemmer = (function(){
+      return function(word) {
+        return word;
+      }
+    })();
+    
+    lunr.Pipeline.registerFunction(lunr.zhcn.stemmer, 'stemmer-zhcn');
+
+    /* lunr trimmer function */
+    lunr.zhcn.wordCharacters = "一二三四五六七八九十百千万億兆一-龠々〆ヵヶぁ-んァ-ヴーｱ-ﾝﾞa-zA-Zａ-ｚＡ-Ｚ0-9０-９";
+    lunr.zhcn.trimmer = lunr.trimmerSupport.generateTrimmer(lunr.zhcn.wordCharacters);
     lunr.Pipeline.registerFunction(lunr.zhcn.trimmer, 'trimmer-zhcn');
 
-    lunr.zhcn.tokenizer = function (obj) {
-        if (!arguments.length || obj == null || obj == undefined) return []
-        if (Array.isArray(obj)) return obj.map(function (t) { return lunr.utils.asString(t).toLowerCase() }) 
-        var str = obj.toString().replace(/^\s+/, '')
-      
-        for (var i = str.length - 1; i >= 0; i--) { //这里需要用标点符号进行分隔
-          if (/\S/.test(str.charAt(i))) {
-            str = str.substring(0, i + 1)
-            break
-          }
-        }
-       
-      
-        var rs = str
-          .split(/[\ |\~|\`|\!|\@|\#|\$|\%|\^|\&|\*|\uFE30-\uFFA0|\(|\)|\-|\_|\+|\=|\||\\|\[|\]|\{|\}|\;|\:|\"|\'|\,|\<|\.|\>|\/|\?]+/)
-          .map(function (token) {
-            var t = token.replace(/[\ |\~|\`|\!|\@|\#|\$|\%|\^|\&|\*|\uFE30-\uFFA0|\(|\)|\-|\_|\+|\=|\||\\|\[|\]|\{|\}|\;|\:|\"|\'|\,|\<|\.|\>|\/|\?]/g, '').toLowerCase()
-            
-            return t;
-          });
-      
-        // TODO: This exists so that the deprecated property lunr.tokenizer.seperator can still be used. By
-        // default it is set to false and so the correctly spelt lunr.tokenizer.separator is used unless
-        // the user is using the old property to customise the tokenizer.
-        //
-        // This should be removed when version 1.0.0 is released.
-        var separator = lunr.tokenizer.seperator || lunr.tokenizer.separator
-      
-        return obj.toString().trim().toLowerCase().split(separator); 
-    }
+
+    /* lunr stop word filter. see https://www.ranks.nl/stopwords/chinese-stopwords */
+    lunr.zhcn.stopWordFilter = lunr.generateStopWordFilter('的 一 不 在 人 有 是 为 以 于 上 他 而 后 之 来 及 了 因 下 可 到 由 这 与 也 此 但 并 个 其 已 无 小 我 们 起 最 再 今 去 好 只 又 或 很 亦 某 把 那 你 乃 它 吧 被 比 别 趁 当 从 到 得 打 凡 儿 尔 该 各 给 跟 和 何 还 即 几 既 看 据 距 靠 啦 了 另 么 每 们 嘛 拿 哪 那 您 凭 且 却 让 仍 啥 如 若 使 谁 虽 随 同 所 她 哇 嗡 往 哪 些 向 沿 哟 用 于 咱 则 怎 曾 至 致 着 诸 自'.split(' '));
+    lunr.Pipeline.registerFunction(lunr.zhcn.stopWordFilter, 'stopWordFilter-zhcn');
   };
 }))
