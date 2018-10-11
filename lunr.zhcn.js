@@ -24,15 +24,8 @@
    * can return a function as the exported value.
    */
   return function(lunr) { 
-    /* throw error if lunr is not yet included */
-    if ('undefined' === typeof lunr) {
-      throw new Error('Lunr is not present. Please include / require Lunr before this script.');
-    }
-
-    /* throw error if lunr stemmer support is not yet included */
-    if ('undefined' === typeof lunr.stemmerSupport) {
-      throw new Error('Lunr stemmer support is not present. Please include / require Lunr stemmer support before this script.');
-    }
+       if (void 0 === e) throw new Error("Lunr is not present. Please include / require Lunr before this script.");
+       if (void 0 === e.stemmerSupport) throw new Error("Lunr stemmer support is not present. Please include / require Lunr stemmer support before this script.");
 
     /*
     Thai tokenization is the same to Japanense, which does not take into account spaces.
