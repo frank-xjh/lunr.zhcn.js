@@ -24,9 +24,7 @@
    * can return a function as the exported value.
    */
   return function(lunr) { 
-       if (void 0 === root) throw new Error("Lunr is not present. Please include / require Lunr before this script.");
-       if (void 0 === root.stemmerSupport) throw new Error("Lunr stemmer support is not present. Please include / require Lunr stemmer support before this script.");
-
+    
     /*
     Thai tokenization is the same to Japanense, which does not take into account spaces.
     So, it uses the same logic to assign tokenization function due to different Lunr versions.
